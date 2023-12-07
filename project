@@ -1,0 +1,62 @@
+import requests
+from app_id_and_key import app_id, app_key
+
+
+# Function that searches for recipes based on ingredients and excluded ingredients (like allergens)
+def recipe_search(ingredients, excluded_ingredients):
+    ingredient_query = ",".join(ingredients)
+    excluded_query = "&".join(["excluded=" + allergen for allergen in excluded_ingredients])
+    url = 'https://api.edamam.com/search?q={}&app_id={}&app_key={}{}'.format(ingredient_query, app_id, app_key, "&" + excluded_query if excluded_ingredients else "")
+    response = requests.get(url)
+    data = response.json()
+    return data['hits']
+
+
+# Gets the ingredients the user wishes to use
+def get_ingredients():
+    ingredient_choice = input("Enter one or more ingredients you want to use (separated by commas): ")
+    while ingredient_choice == "":
+        ingredient_choice = input(
+            "Please enter at least one ingredient: ")  # Asks user repeatedly until they enter at least one ingredient
+    return [ingredient.strip() for ingredient in ingredient_choice.split(",")]
+
+
+# Function to get information on allergies from user input
+def get_allergies():
+    allergies = input("Please enter you allergies (separated by commas), or press Enter to skip: ")
+    if allergies:
+        return [allergy.strip() for allergy in allergies.split(",")]
+    else:
+        return []  # If no allergies, returns an empty list
+
+
+# Main function that runs the program
+def run():
+    # Get ingredient(s) from user
+    ingredients = get_ingredients()
+    allergies = get_allergies()
+    results = recipe_search(ingredients, allergies)
+
+    if not results:
+        print("Sorry, no recipes were found for this criteria.")
+        return
+
+    print("Here are your recipes: \n")
+    for result in results:
+        recipe = result['recipe']
+
+        # Calculates nutritional information per serving
+        calories = round(recipe['calories'] / recipe['yield'])
+        fat = recipe['totalNutrients']['FAT']
+        fat_quantity = round(fat['quantity'] / recipe['yield'])
+        protein = recipe['totalNutrients']['PROCNT']
+        protein_quantity = round(protein['quantity'] / recipe['yield'])
+
+        # Displays the recipes and their nutritional information
+        print("=========================================")
+        print(recipe['label'])
+        print(recipe['url'])
+        print("Contains per serving: " + str(calories) + "calories, " + str(fat_quantity) + "g fat, " + "g carbs, " + str(protein_quantity) + "g protein.")  # Transforms the integers into strings to concatenate them
+
+
+run()
